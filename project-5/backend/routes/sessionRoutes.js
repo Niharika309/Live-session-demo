@@ -8,7 +8,29 @@ const router = express.Router();
 router.post('/create', async (req, res) => {
   try {
     const uniqueId = uuidv4();
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+
+
+    // Prioritize request origin (from frontend), then env variable, then localhost
+    let baseUrl = 'http://localhost:5173';
+    
+    // Get origin from request headers (most reliable for production)
+    if (req.headers.origin) {
+      baseUrl = req.headers.origin.replace(/\/$/, '');
+    } else if (req.headers.referer) {
+      // Extract origin from referer
+      try {
+        const url = new URL(req.headers.referer);
+        baseUrl = url.origin;
+      } catch (e) {
+        // Fallback to env variable if referer parsing fails
+        baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+      }
+    } else {
+      // Use environment variable as fallback
+      baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    }
+    
     const userUrl = `${baseUrl}/session/${uniqueId}`;
 
     const session = new LiveSession({
